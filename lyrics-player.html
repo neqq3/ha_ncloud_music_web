@@ -1,0 +1,2117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>云音乐播放器</title>
+    <style>
+        /* ========== 可自定义变量 ========== */
+        :root {
+            --text-color: #fff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --lyric-color: rgba(255, 255, 255, 0.6);
+            --lyric-active-color: #fff;
+            --lyric-translation-color: rgba(255, 255, 255, 0.6);
+            --control-bg: rgba(255, 255, 255, 0.1);
+            --control-hover: rgba(255, 255, 255, 0.2);
+            --progress-bg: rgba(255, 255, 255, 0.15);
+            --progress-fill: #fff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #000;
+            color: var(--text-color);
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* ========== 动态背景 ========== */
+        .bg-layer {
+            position: fixed;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 120%;
+            background-size: cover;
+            background-position: center;
+            filter: blur(80px) brightness(0.6);
+            z-index: -2;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+        }
+
+        .bg-layer.active {
+            opacity: 1;
+        }
+
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            /* 轻微暗化 */
+            z-index: -1;
+            backdrop-filter: blur(60px);
+            /* 额外的模糊层，增加平滑度 */
+        }
+
+        /* 主容器 - 左右分栏 */
+        .container {
+            display: flex;
+            height: 100vh;
+            padding: 60px 40px;
+            gap: 80px;
+            /* 减小间距 */
+            max-width: 1600px;
+            /* 限制最大宽度，防止超宽屏太散 */
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+            justify-content: center;
+            /* 整体居中 */
+        }
+
+        /* ========== 左侧播放器区域 ========== */
+        /* ========== 左侧播放器区域 ========== */
+        .player-section {
+            flex: 0 0 500px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-top: 80px;
+            /* 整体下移 */
+        }
+
+
+
+        /* 封面容器 */
+        .cover-wrapper {
+            position: relative;
+            margin-bottom: 48px;
+            border-radius: 16px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5), 0 20px 40px rgba(0, 0, 0, 0.3);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .cover-wrapper:hover {
+            transform: scale(1.02);
+        }
+
+        .cover {
+            width: 460px;
+            height: 460px;
+            display: block;
+            object-fit: cover;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* 歌曲信息 */
+        .song-info {
+            text-align: center;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .artist {
+            font-size: 20px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 进度条 */
+        .progress-section {
+            width: 100%;
+            margin-bottom: 40px;
+            padding: 0 10px;
+        }
+
+        /* ... (progress bar styles unchanged) ... */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--progress-bg);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+            transition: height 0.2s ease;
+        }
+
+        .progress-bar:hover {
+            height: 8px;
+            border-radius: 4px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--progress-fill);
+            border-radius: inherit;
+            width: 0%;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 12px;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 控制按钮 */
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+        }
+
+        .control-btn {
+            width: 56px;
+            height: 56px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn.play-btn {
+            width: 80px;
+            height: 80px;
+            font-size: 36px;
+            background: #fff;
+            color: #000;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn.play-btn:hover {
+            transform: scale(1.05);
+            background: #fff;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        /* 音量控制 */
+        .volume-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 40px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            height: 24px;
+            /* 固定高度确保对齐 */
+        }
+
+        .player-section:hover .volume-section {
+            opacity: 1;
+        }
+
+        .volume-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+            height: 24px;
+            width: 24px;
+        }
+
+        .volume-slider {
+            width: 120px;
+            height: 4px;
+            appearance: none;
+            -webkit-appearance: none;
+            background: var(--progress-bg);
+            border-radius: 2px;
+            outline: none;
+            margin: 0;
+            /* 移除默认边距 */
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            margin-top: -4px;
+            /* 垂直居中修正 (如果需要) */
+        }
+
+        /* 针对 Firefox 的修正 */
+        .volume-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 歌词偏移控制 */
+        .lyric-offset-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .player-section:hover .lyric-offset-section {
+            opacity: 1;
+        }
+
+        .offset-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-right: 4px;
+        }
+
+        .offset-btn {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .offset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .offset-btn:active {
+            transform: scale(0.95);
+        }
+
+        .offset-value {
+            font-size: 12px;
+            font-weight: 500;
+            min-width: 45px;
+            text-align: center;
+            color: var(--text-color);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .offset-reset {
+            width: 24px;
+            height: 24px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .offset-reset:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        /* ========== 右侧歌词区域 ========== */
+        .lyrics-section {
+            flex: 0 1 800px;
+            /* 限制宽度，不再无限伸展 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            /* 居中对齐歌词容器 */
+            overflow: hidden;
+            position: relative;
+            padding-left: 60px;
+            /* 歌词整体右移 */
+        }
+
+        .lyrics-container {
+            height: 80vh;
+            width: 100%;
+            max-width: 900px;
+            overflow: hidden;
+            position: relative;
+            padding-right: 60px;
+            /* 防止放大后的歌词被裁切 */
+            box-sizing: border-box;
+            mask-image: linear-gradient(transparent 0%, black 15%, black 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(transparent 0%, black 15%, black 85%, transparent 100%);
+        }
+
+        .lyrics-scroll {
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            padding-top: 35vh;
+            will-change: transform;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            /* 歌词文本左对齐 */
+        }
+
+        .lyric-line {
+            padding: 16px 0;
+            font-size: 32px;
+            color: var(--lyric-color);
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            line-height: 1.4;
+            cursor: pointer;
+            transform-origin: left center;
+            filter: blur(0.5px);
+            opacity: 0.5;
+            width: 100%;
+        }
+
+        .lyric-line:hover {
+            opacity: 0.8;
+            filter: blur(0px);
+        }
+
+        .lyric-line.active {
+            color: var(--lyric-active-color);
+            font-size: 32px;
+            /* 保持相同字号 */
+            font-weight: 700;
+            filter: blur(0px);
+            opacity: 1;
+            transform: none;
+            /* 不缩放，避免换行 */
+            text-shadow: 0 4px 30px rgba(255, 255, 255, 0.3), 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .lyric-translation {
+            font-size: 28px;
+            /* 增大翻译字体 */
+            color: var(--lyric-translation-color);
+            margin-top: 10px;
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .lyric-line.active .lyric-translation {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* 设置按钮 */
+        .settings-btn {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+
+        /* 安全提示 & 配置样式 (保持原有，微调颜色) */
+        .security-notice {
+            background: rgba(255, 193, 7, 0.15);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #fff;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+                padding: 30px;
+                gap: 40px;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .player-section {
+                flex: none;
+                width: 100%;
+            }
+
+            .cover {
+                width: 280px;
+                height: 280px;
+            }
+
+            .lyrics-section {
+                padding-left: 0;
+                height: 60vh;
+            }
+
+            .lyric-line.active {
+                font-size: 28px;
+            }
+        }
+
+        /* 全屏按钮 */
+        .fullscreen-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            background: var(--control-bg);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+            /* 确保在顶部工具栏之上 */
+        }
+
+        .fullscreen-btn:hover {
+            background: var(--control-hover);
+        }
+
+        /* 顶部工具栏 */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.3s;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), transparent);
+            pointer-events: none;
+        }
+
+        /* 用 JS 控制的显示状态 */
+        body.show-controls .top-bar,
+        body.show-controls .fullscreen-btn,
+        body.show-controls .settings-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .player-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+        }
+
+        .player-selector:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .player-selector-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .player-selector-name {
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .player-selector-arrow {
+            font-size: 10px;
+            color: var(--text-secondary);
+            transition: transform 0.2s;
+        }
+
+        /* 播放器切换弹层 */
+        .player-switcher-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 80px;
+            z-index: 200;
+            backdrop-filter: blur(5px);
+        }
+
+        .player-switcher-overlay.show {
+            display: flex;
+        }
+
+        .player-switcher {
+            background: rgba(30, 30, 50, 0.95);
+            border-radius: 16px;
+            padding: 24px;
+            min-width: 320px;
+            max-width: 400px;
+            max-height: 60vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+        }
+
+        .player-switcher h3 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .player-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .player-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .player-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .player-item.active {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .player-item-icon {
+            font-size: 20px;
+            margin-right: 12px;
+        }
+
+        .player-item-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .player-item-name {
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .player-item-id {
+            font-size: 11px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .player-item-check {
+            margin-left: 8px;
+            color: #4ade80;
+            font-size: 16px;
+        }
+
+        .loading-text {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 20px;
+        }
+
+        /* 错误/加载状态 */
+        .status-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 20px;
+        }
+
+        .status-message .icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                padding: 80px 20px 20px 20px;
+                /* 增加顶部 padding 给工具栏留空间 */
+                gap: 20px;
+                max-width: 100%;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .player-section {
+                flex: 0 0 auto;
+                padding-top: 0;
+            }
+
+            .cover-wrapper {
+                margin-bottom: 24px;
+            }
+
+            .cover {
+                width: 200px;
+                height: 200px;
+            }
+
+            .song-info {
+                margin-bottom: 20px;
+            }
+
+            .title {
+                font-size: 24px;
+            }
+
+            .artist {
+                font-size: 16px;
+            }
+
+            /* 歌词区域移动端样式 */
+            .lyrics-section {
+                flex: 1;
+                min-height: 300px;
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+
+            .lyrics-container {
+                height: 300px;
+                max-width: 100%;
+            }
+
+            .lyric-line {
+                font-size: 20px;
+                padding: 10px 0;
+            }
+
+            .lyric-translation {
+                font-size: 16px;
+            }
+
+            /* 移动端视图切换 - 默认显示播放器 */
+            body.mobile-lyrics-view .player-section {
+                display: none;
+            }
+
+            body.mobile-lyrics-view .lyrics-section {
+                flex: 1;
+                min-height: calc(100vh - 120px);
+            }
+
+            body.mobile-lyrics-view .lyrics-container {
+                height: calc(100vh - 160px);
+            }
+
+            /* 默认隐藏歌词区域 */
+            body:not(.mobile-lyrics-view) .lyrics-section {
+                display: none;
+            }
+
+            /* 按钮位置调整，避免重叠 */
+            .settings-btn {
+                top: 15px;
+                right: 110px;
+                /* 移到最左边 */
+                width: 36px;
+                height: 36px;
+            }
+
+            .fullscreen-btn {
+                top: 15px;
+                right: 60px;
+                /* 中间位置 */
+                width: 36px;
+                height: 36px;
+            }
+
+            /* 添加歌词切换按钮样式 */
+            .lyrics-toggle-btn {
+                display: block !important;
+                position: fixed;
+                top: 15px;
+                right: 15px;
+                width: 36px;
+                height: 36px;
+                border: none;
+                border-radius: 8px;
+                background: var(--control-bg);
+                color: white;
+                font-size: 16px;
+                cursor: pointer;
+                z-index: 100;
+            }
+
+            /* 顶部工具栏移动端样式 */
+            .top-bar {
+                height: 50px;
+                padding: 0 10px;
+            }
+
+            .player-selector {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+
+            /* 歌词偏移控制移动端 - 只在播放器视图显示 */
+            body.mobile-lyrics-view .lyric-offset-section,
+            body.mobile-lyrics-view .volume-section {
+                display: none;
+            }
+
+            .lyric-offset-section {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .offset-btn {
+                padding: 6px 12px;
+            }
+
+            /* 音量和偏移控制触摸设备始终可见 */
+            .volume-section,
+            .lyric-offset-section {
+                opacity: 1;
+            }
+        }
+
+        /* 歌词切换按钮 - 桌面端隐藏 */
+        .lyrics-toggle-btn {
+            display: none;
+        }
+
+        /* ========== 配置对话框样式 ========== */
+        .config-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .config-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .config-dialog {
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 32px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .config-dialog h2 {
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+
+        .config-desc {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .config-form label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .config-form input[type="text"],
+        .config-form input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .config-form input:focus {
+            border-color: var(--bg-gradient-start);
+        }
+
+        .config-form input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .help-link {
+            color: var(--bg-gradient-start);
+            text-decoration: none;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .help-link:hover {
+            text-decoration: underline;
+        }
+
+        .token-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: -10px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .token-toggle input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* 配置头部和关闭按钮 */
+        .config-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .config-header h2 {
+            margin: 0;
+        }
+
+        .config-close-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .config-close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .config-close-btn.hidden {
+            display: none;
+        }
+
+        .config-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .config-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .config-btn.primary {
+            background: var(--bg-gradient-start);
+            color: #fff;
+        }
+
+        .config-btn.primary:hover {
+            background: #25d366;
+        }
+
+        .config-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .config-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .token-help {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .token-help h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .token-help ol {
+            padding-left: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .token-help li strong {
+            color: #fff;
+        }
+
+        .token-help .config-btn {
+            margin-top: 16px;
+            width: 100%;
+        }
+
+        /* 设置按钮 */
+        .settings-btn {
+            position: fixed;
+            top: 20px;
+            right: 70px;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            background: var(--control-bg);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .settings-btn:hover {
+            background: var(--control-hover);
+        }
+
+        /* 安全提示 */
+        .security-notice {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .security-notice strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #ffc107;
+        }
+
+        .security-notice ul {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--text-secondary);
+        }
+
+        .security-notice li {
+            margin-bottom: 4px;
+        }
+
+        /* 下拉选择框 */
+        .config-select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 8px;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+
+        .config-select:focus {
+            border-color: var(--bg-gradient-start);
+        }
+
+        .config-select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .entity-hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        /* 加载动画 */
+        .config-loading {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top-color: var(--bg-gradient-start);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .config-loading p {
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 动态背景层 -->
+    <div class="bg-layer" id="bgLayer1"></div>
+    <div class="bg-layer" id="bgLayer2"></div>
+    <div class="bg-overlay"></div>
+
+    <!-- 主内容 -->
+    <div class="container" id="mainContainer" style="display: none;">
+        <!-- 左侧：播放器 -->
+        <div class="player-section">
+            <div class="cover-wrapper">
+                <img class="cover" id="cover" src="" alt="封面">
+            </div>
+
+            <div class="song-info">
+                <div class="title" id="title">加载中...</div>
+                <div class="artist" id="artist"></div>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="time-display">
+                    <span id="currentTime">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn" onclick="control('previous')" title="上一首">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+                    </svg>
+                </button>
+                <button class="control-btn play-btn" id="playBtn" onclick="control('play_pause')" title="播放/暂停">
+                    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                        <path d="M8 5v14l11-7z" />
+                    </svg>
+                </button>
+                <button class="control-btn" onclick="control('next')" title="下一首">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="volume-section">
+                <span class="volume-icon" id="volumeIcon" onclick="toggleMute()">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path
+                            d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                    </svg>
+                </span>
+                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50"
+                    onchange="setVolume(this.value)" oninput="setVolume(this.value)">
+            </div>
+
+            <!-- 歌词偏移调整 -->
+            <div class="lyric-offset-section">
+                <span class="offset-label">歌词偏移</span>
+                <button class="offset-btn" onclick="adjustLyricOffset(-1000)">-1s</button>
+                <button class="offset-btn" onclick="adjustLyricOffset(-100)">-0.1s</button>
+                <span class="offset-value" id="offsetValue">0s</span>
+                <button class="offset-btn" onclick="adjustLyricOffset(100)">+0.1s</button>
+                <button class="offset-btn" onclick="adjustLyricOffset(1000)">+1s</button>
+                <button class="offset-reset" onclick="resetLyricOffset()" title="重置">↺</button>
+            </div>
+        </div>
+
+        <!-- 右侧：歌词 -->
+        <div class="lyrics-section">
+            <div class="lyrics-container">
+                <div class="lyrics-scroll" id="lyricsScroll"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 顶部工具栏 -->
+    <div class="top-bar" id="topBar">
+        <div class="player-selector" id="playerSelector" onclick="showPlayerSwitcher()">
+            <span class="player-selector-label">当前播放器：</span>
+            <span class="player-selector-name" id="currentPlayerName">加载中...</span>
+            <span class="player-selector-arrow">▼</span>
+        </div>
+    </div>
+
+    <!-- 播放器切换列表 -->
+    <div class="player-switcher-overlay" id="playerSwitcherOverlay" onclick="hidePlayerSwitcher()">
+        <div class="player-switcher" onclick="event.stopPropagation()">
+            <h3>选择播放器</h3>
+            <div class="player-list" id="playerList">
+                <div class="loading-text">加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 状态消息 -->
+    <div class="status-message" id="statusMessage">
+        <div class="icon">🎵</div>
+        <div id="statusText">正在连接...</div>
+    </div>
+
+    <!-- 配置对话框 -->
+    <div class="config-overlay" id="configOverlay">
+        <div class="config-dialog">
+            <div class="config-header">
+                <h2>🎵 播放器配置</h2>
+                <button class="config-close-btn" id="configCloseBtn" onclick="hideConfig()" title="关闭">✕</button>
+            </div>
+
+            <!-- 步骤 1：输入 Token -->
+            <div id="configStep1">
+                <p class="config-desc">第 1 步：输入 Home Assistant 访问令牌</p>
+
+                <div class="config-form">
+                    <label for="configHaUrl">Home Assistant 地址</label>
+                    <input type="text" id="configHaUrl" placeholder="留空使用当前域名">
+
+                    <label for="configToken">
+                        长期访问令牌 (Token)
+                        <a href="#" onclick="showTokenHelp(); return false;" class="help-link">如何获取?</a>
+                    </label>
+                    <input type="password" id="configToken" placeholder="粘贴您的 Token">
+                    <div class="token-toggle">
+                        <input type="checkbox" id="showToken" onchange="toggleTokenVisibility()">
+                        <label for="showToken">显示 Token</label>
+                    </div>
+
+                    <div class="security-notice">
+                        <strong>🔒 安全提示</strong>
+                        <ul>
+                            <li>Token 仅保存在本地浏览器中</li>
+                            <li>建议在私有网络中使用</li>
+                            <li>可创建限权专用用户以降低风险</li>
+                        </ul>
+                    </div>
+
+                    <div class="config-actions">
+                        <button class="config-btn secondary" onclick="clearConfig()">清除配置</button>
+                        <button class="config-btn primary" id="verifyTokenBtn" onclick="verifyToken()">验证 Token</button>
+                    </div>
+                </div>
+
+                <div class="token-help" id="tokenHelp" style="display:none;">
+                    <h3>📝 如何获取长期访问令牌</h3>
+                    <ol>
+                        <li>打开 Home Assistant 界面</li>
+                        <li>点击左下角您的<strong>用户头像</strong></li>
+                        <li>滚动到页面底部，找到<strong>「长期访问令牌」</strong></li>
+                        <li>点击<strong>「创建令牌」</strong></li>
+                        <li>输入名称（如「歌词播放器」）后点击确定</li>
+                        <li>复制生成的令牌，粘贴到上方输入框</li>
+                    </ol>
+                    <button class="config-btn secondary" onclick="hideTokenHelp()">我知道了</button>
+                </div>
+            </div>
+
+            <!-- 步骤 2：选择实体 -->
+            <div id="configStep2" style="display:none;">
+                <p class="config-desc">第 2 步：选择媒体播放器</p>
+
+                <div class="config-form">
+                    <label for="configEntity">选择播放器</label>
+                    <select id="configEntity" class="config-select">
+                        <option value="">-- 请选择 --</option>
+                    </select>
+                    <p class="entity-hint" id="entityHint"></p>
+
+                    <div class="config-actions">
+                        <button class="config-btn secondary" onclick="goToStep1()">返回上一步</button>
+                        <button class="config-btn primary" onclick="saveConfig()">保存并连接</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 验证中状态 -->
+            <div id="configLoading" style="display:none;">
+                <div class="config-loading">
+                    <div class="spinner"></div>
+                    <p id="loadingText">正在验证...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置按钮 -->
+    <button class="settings-btn" onclick="showConfig()" title="设置">⚙️</button>
+
+    <!-- 全屏按钮 -->
+    <button class="fullscreen-btn" onclick="toggleFullscreen()" title="全屏">⛶</button>
+
+    <!-- 歌词切换按钮（移动端） -->
+    <button class="lyrics-toggle-btn" id="lyricsToggleBtn" onclick="toggleMobileView()" title="切换歌词">🎵</button>
+
+    <script>
+        // ========== 配置管理 ==========
+        const STORAGE_KEY = 'lyrics_player_config';
+
+        function getConfig() {
+            // 优先从 URL 参数获取
+            const params = new URLSearchParams(window.location.search);
+            const urlConfig = {
+                entity: params.get('entity'),
+                token: params.get('token'),
+                ha_url: params.get('ha_url')
+            };
+
+            // 如果 URL 有参数，使用 URL 参数
+            if (urlConfig.entity && urlConfig.token) {
+                return {
+                    entity: urlConfig.entity,
+                    token: urlConfig.token,
+                    ha_url: urlConfig.ha_url || window.location.origin
+                };
+            }
+
+            // 否则从 localStorage 获取
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error('读取配置失败:', e);
+            }
+
+            return null;
+        }
+
+        function saveConfigToStorage(config) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+                return true;
+            } catch (e) {
+                console.error('保存配置失败:', e);
+                return false;
+            }
+        }
+
+        function clearConfigFromStorage() {
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+            } catch (e) {
+                console.error('清除配置失败:', e);
+            }
+        }
+
+        // ========== 配置对话框 ==========
+        function showConfig(forceShowClose = false) {
+            const config = getConfig();
+            const closeBtn = document.getElementById('configCloseBtn');
+
+            // 如果已有有效配置，允许关闭对话框
+            if (config && config.entity && config.token || forceShowClose) {
+                closeBtn.classList.remove('hidden');
+            } else {
+                closeBtn.classList.add('hidden');
+            }
+
+            if (config) {
+                document.getElementById('configToken').value = config.token || '';
+                document.getElementById('configHaUrl').value = config.ha_url || '';
+            }
+            // 显示步骤1
+            document.getElementById('configStep1').style.display = 'block';
+            document.getElementById('configStep2').style.display = 'none';
+            document.getElementById('configLoading').style.display = 'none';
+            document.getElementById('configOverlay').classList.add('show');
+        }
+
+        function hideConfig() {
+            const config = getConfig();
+            // 只有在有有效配置时才允许关闭
+            if (config && config.entity && config.token) {
+                document.getElementById('configOverlay').classList.remove('show');
+            }
+        }
+
+        function goToStep1() {
+            document.getElementById('configStep1').style.display = 'block';
+            document.getElementById('configStep2').style.display = 'none';
+            document.getElementById('configLoading').style.display = 'none';
+        }
+
+        function showLoading(text) {
+            document.getElementById('configStep1').style.display = 'none';
+            document.getElementById('configStep2').style.display = 'none';
+            document.getElementById('configLoading').style.display = 'block';
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        async function verifyToken() {
+            const token = document.getElementById('configToken').value.trim();
+            const ha_url = document.getElementById('configHaUrl').value.trim() || window.location.origin;
+
+            if (!token) {
+                alert('请输入长期访问令牌');
+                return;
+            }
+
+            showLoading('正在验证 Token...');
+
+            try {
+                // 测试 Token 是否有效
+                const testRes = await fetch(`${ha_url}/api/`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!testRes.ok) {
+                    throw new Error(testRes.status === 401 ? 'Token 无效或已过期' : `连接失败: ${testRes.status}`);
+                }
+
+                showLoading('正在获取播放器列表...');
+
+                // 获取所有 media_player 实体
+                const statesRes = await fetch(`${ha_url}/api/states`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!statesRes.ok) {
+                    throw new Error('获取实体列表失败');
+                }
+
+                const states = await statesRes.json();
+                const mediaPlayers = states.filter(s => s.entity_id.startsWith('media_player.'));
+
+                if (mediaPlayers.length === 0) {
+                    alert('未找到任何媒体播放器实体');
+                    goToStep1();
+                    return;
+                }
+
+                // 填充下拉列表
+                const select = document.getElementById('configEntity');
+                select.innerHTML = '<option value="">-- 请选择 --</option>';
+
+                mediaPlayers.forEach(player => {
+                    const option = document.createElement('option');
+                    option.value = player.entity_id;
+                    const friendlyName = player.attributes.friendly_name || player.entity_id;
+                    option.textContent = `${friendlyName} (${player.entity_id})`;
+                    select.appendChild(option);
+                });
+
+                // 如果之前有保存的实体，自动选中
+                const savedConfig = getConfig();
+                if (savedConfig?.entity) {
+                    select.value = savedConfig.entity;
+                }
+
+                document.getElementById('entityHint').textContent = `共找到 ${mediaPlayers.length} 个播放器`;
+
+                // 临时保存 Token 和 URL
+                window._tempToken = token;
+                window._tempHaUrl = ha_url;
+
+                // 显示步骤2
+                document.getElementById('configStep1').style.display = 'none';
+                document.getElementById('configStep2').style.display = 'block';
+                document.getElementById('configLoading').style.display = 'none';
+
+            } catch (e) {
+                alert('验证失败: ' + e.message);
+                goToStep1();
+            }
+        }
+
+        function saveConfig() {
+            const entity = document.getElementById('configEntity').value;
+            const token = window._tempToken || document.getElementById('configToken').value.trim();
+            const ha_url = window._tempHaUrl || document.getElementById('configHaUrl').value.trim() || window.location.origin;
+
+            if (!entity) {
+                alert('请选择一个播放器');
+                return;
+            }
+
+            const config = { entity, token, ha_url };
+            if (saveConfigToStorage(config)) {
+                hideConfig();
+                window.location.reload();
+            } else {
+                alert('保存配置失败，请重试');
+            }
+        }
+
+        function clearConfig() {
+            if (confirm('确定要清除所有配置吗？')) {
+                clearConfigFromStorage();
+                document.getElementById('configToken').value = '';
+                document.getElementById('configHaUrl').value = '';
+                window._tempToken = null;
+                window._tempHaUrl = null;
+            }
+        }
+
+        function showTokenHelp() {
+            document.getElementById('tokenHelp').style.display = 'block';
+        }
+
+        function hideTokenHelp() {
+            document.getElementById('tokenHelp').style.display = 'none';
+        }
+
+        function toggleTokenVisibility() {
+            const tokenInput = document.getElementById('configToken');
+            const checkbox = document.getElementById('showToken');
+            tokenInput.type = checkbox.checked ? 'text' : 'password';
+        }
+
+        // ========== 播放器切换功能 ==========
+        let cachedMediaPlayers = [];
+
+        function showPlayerSwitcher() {
+            document.getElementById('playerSwitcherOverlay').classList.add('show');
+            loadPlayerList();
+        }
+
+        function hidePlayerSwitcher() {
+            document.getElementById('playerSwitcherOverlay').classList.remove('show');
+        }
+
+        async function loadPlayerList() {
+            const listEl = document.getElementById('playerList');
+            listEl.innerHTML = '<div class="loading-text">加载中...</div>';
+
+            try {
+                const res = await fetch(`${HA_URL}/api/states`, getFetchOptions());
+                if (!res.ok) throw new Error('获取失败');
+
+                const states = await res.json();
+                cachedMediaPlayers = states.filter(s => s.entity_id.startsWith('media_player.'));
+
+                if (cachedMediaPlayers.length === 0) {
+                    listEl.innerHTML = '<div class="loading-text">未找到播放器</div>';
+                    return;
+                }
+
+                listEl.innerHTML = cachedMediaPlayers.map(player => {
+                    const friendlyName = player.attributes.friendly_name || player.entity_id;
+                    const isActive = player.entity_id === ENTITY_ID;
+                    const stateText = player.state === 'playing' ? '正在播放' :
+                        player.state === 'paused' ? '已暂停' :
+                            player.state === 'idle' ? '空闲' : player.state;
+
+                    return `
+                        <div class="player-item ${isActive ? 'active' : ''}" onclick="switchPlayer('${player.entity_id}')">
+                            <span class="player-item-icon">🎵</span>
+                            <div class="player-item-info">
+                                <div class="player-item-name">${friendlyName}</div>
+                                <div class="player-item-id">${player.entity_id} · ${stateText}</div>
+                            </div>
+                            ${isActive ? '<span class="player-item-check">✓</span>' : ''}
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (e) {
+                listEl.innerHTML = '<div class="loading-text">加载失败</div>';
+            }
+        }
+
+        function switchPlayer(entityId) {
+            const config = getConfig();
+            if (config) {
+                config.entity = entityId;
+                saveConfigToStorage(config);
+                hidePlayerSwitcher();
+                window.location.reload();
+            }
+        }
+
+        function updateCurrentPlayerName() {
+            const config = getConfig();
+            if (config && config.entity) {
+                // 尝试从缓存中获取友好名称
+                const player = cachedMediaPlayers.find(p => p.entity_id === config.entity);
+                const name = player?.attributes?.friendly_name || config.entity.replace('media_player.', '');
+                document.getElementById('currentPlayerName').textContent = name;
+            }
+        }
+
+        // ========== 获取当前配置 ==========
+        const config = getConfig();
+        let ENTITY_ID = config?.entity || '';
+        let TOKEN = config?.token || '';
+        let HA_URL = config?.ha_url || window.location.origin;
+
+        // ========== 状态变量 ==========
+        let lyrics = [];
+        let tlyrics = [];
+        let mergedLyrics = [];
+        let currentIndex = -1;
+        let currentSongId = '';
+        let isPlaying = false;
+        let duration = 0;
+        let currentPosition = 0;
+        let positionUpdatedAt = null;
+        let refreshInterval = null;
+
+        // ========== 歌词偏移 ==========
+        const OFFSET_STORAGE_KEY = 'lyrics_player_offset';
+        let lyricOffset = parseInt(localStorage.getItem(OFFSET_STORAGE_KEY)) || 0;
+
+        function updateOffsetDisplay() {
+            const offsetSec = lyricOffset / 1000;
+            const sign = offsetSec >= 0 ? '+' : '';
+            document.getElementById('offsetValue').textContent = `${sign}${offsetSec.toFixed(1)}s`;
+        }
+
+        function adjustLyricOffset(delta) {
+            lyricOffset = Math.max(-10000, Math.min(10000, lyricOffset + delta));
+            localStorage.setItem(OFFSET_STORAGE_KEY, lyricOffset);
+            updateOffsetDisplay();
+        }
+
+        function resetLyricOffset() {
+            lyricOffset = 0;
+            localStorage.setItem(OFFSET_STORAGE_KEY, lyricOffset);
+            updateOffsetDisplay();
+        }
+
+        // 初始化显示
+        document.addEventListener('DOMContentLoaded', updateOffsetDisplay);
+
+        // ========== 认证头 ==========
+        function getHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            if (TOKEN) {
+                headers['Authorization'] = `Bearer ${TOKEN}`;
+            }
+            return headers;
+        }
+
+        function getFetchOptions(method = 'GET', body = null) {
+            const options = {
+                method,
+                headers: getHeaders(),
+                credentials: TOKEN ? 'omit' : 'include'
+            };
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            return options;
+        }
+
+        // ========== LRC 解析 ==========
+        function parseLrc(text) {
+            if (!text) return [];
+            const lines = [];
+            text.split('\n').forEach(line => {
+                const match = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/);
+                if (match) {
+                    const time = parseInt(match[1]) * 60 + parseInt(match[2]) + parseInt(match[3]) / (match[3].length === 2 ? 100 : 1000);
+                    const text = match[4].trim();
+                    if (text) lines.push({ time, text });
+                }
+            });
+            return lines.sort((a, b) => a.time - b.time);
+        }
+
+        function mergeLyrics(lrc, tlrc) {
+            const tMap = new Map(tlrc.map(t => [t.time.toFixed(2), t.text]));
+            return lrc.map(l => ({
+                time: l.time,
+                text: l.text,
+                translation: tMap.get(l.time.toFixed(2)) || ''
+            }));
+        }
+
+        // ========== 解析 song_id ==========
+        function parseSongId(contentId) {
+            try {
+                const url = new URL(contentId);
+                const data = url.searchParams.get('data');
+                if (data) {
+                    const decoded = atob(data);
+                    return new URLSearchParams(decoded).get('id') || '';
+                }
+            } catch { }
+            return '';
+        }
+
+        // ========== API 调用 ==========
+        async function fetchState() {
+            try {
+                const res = await fetch(`${HA_URL}/api/states/${ENTITY_ID}`, getFetchOptions());
+                if (!res.ok) {
+                    if (res.status === 401) throw new Error('认证失败：Token 无效或已过期');
+                    if (res.status === 404) throw new Error('实体不存在：请检查实体 ID');
+                    throw new Error(`API 错误: ${res.status}`);
+                }
+                return await res.json();
+            } catch (e) {
+                showStatus('error', e.message);
+                return null;
+            }
+        }
+
+        async function fetchLyrics(songId) {
+            try {
+                const res = await fetch(`${HA_URL}/cloud_music/api?action=lyric&id=${songId}`, getFetchOptions());
+                const data = await res.json();
+                lyrics = parseLrc(data.lrc);
+                tlyrics = parseLrc(data.tlyric);
+                mergedLyrics = mergeLyrics(lyrics, tlyrics);
+                renderLyrics();
+            } catch (e) {
+                console.error('获取歌词失败:', e);
+            }
+        }
+
+        // ========== 控制播放器 ==========
+        async function control(action) {
+            // 映射 action 到正确的 HA 服务名
+            const actionMap = {
+                'previous': 'previous_track',
+                'next': 'next_track',
+                'play_pause': 'play_pause'
+            };
+            const service = actionMap[action] || action;
+            await fetch(`${HA_URL}/api/services/media_player/media_${service}`,
+                getFetchOptions('POST', { entity_id: ENTITY_ID }));
+        }
+
+        async function setVolume(value) {
+            const volume = parseInt(value) / 100;
+            await fetch(`${HA_URL}/api/services/media_player/volume_set`,
+                getFetchOptions('POST', { entity_id: ENTITY_ID, volume_level: volume }));
+        }
+
+        async function toggleMute() {
+            await fetch(`${HA_URL}/api/services/media_player/volume_mute`,
+                getFetchOptions('POST', { entity_id: ENTITY_ID, is_volume_muted: true }));
+        }
+
+        async function seekTo(position) {
+            await fetch(`${HA_URL}/api/services/media_player/media_seek`,
+                getFetchOptions('POST', { entity_id: ENTITY_ID, seek_position: position }));
+        }
+
+        // ========== 渲染歌词 ==========
+        function renderLyrics() {
+            const container = document.getElementById('lyricsScroll');
+            if (mergedLyrics.length === 0) {
+                container.innerHTML = '<div class="lyric-line" style="text-align:center;">暂无歌词</div>';
+                return;
+            }
+            container.innerHTML = mergedLyrics.map((l, i) => `
+                <div class="lyric-line" data-index="${i}">
+                    <div class="lyric-text">${l.text}</div>
+                    ${l.translation ? `<div class="lyric-translation">${l.translation}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // 加载封面图片（带认证 + 动态背景）
+        let activeBgLayer = 1;
+
+        async function loadCoverImage(url) {
+            const coverEl = document.getElementById('cover');
+            const bgLayer1 = document.getElementById('bgLayer1');
+            const bgLayer2 = document.getElementById('bgLayer2');
+
+            try {
+                // 构建完整 URL
+                const fullUrl = url.startsWith('http') ? url : `${HA_URL}${url}`;
+
+                const res = await fetch(fullUrl, {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+
+                if (!res.ok) throw new Error('图片加载失败');
+
+                const blob = await res.blob();
+                const blobUrl = URL.createObjectURL(blob);
+
+                // 释放旧的 blob URL (保留最近一个以防闪烁，实际应用中可优化)
+                if (coverEl._blobUrl) {
+                    URL.revokeObjectURL(coverEl._blobUrl);
+                }
+                coverEl._blobUrl = blobUrl;
+                coverEl.src = blobUrl;
+
+                // 动态背景切换 (双层交替淡入淡出)
+                const nextLayer = activeBgLayer === 1 ? bgLayer2 : bgLayer1;
+                const currentLayer = activeBgLayer === 1 ? bgLayer1 : bgLayer2;
+
+                nextLayer.style.backgroundImage = `url('${blobUrl}')`;
+                nextLayer.classList.add('active');
+                currentLayer.classList.remove('active');
+
+                activeBgLayer = activeBgLayer === 1 ? 2 : 1;
+
+            } catch (e) {
+                console.error('封面加载失败:', e);
+                // 尝试直接加载
+                const directUrl = url.startsWith('http') ? url : `${HA_URL}${url}`;
+                coverEl.src = directUrl;
+
+                // 背景回退
+                const nextLayer = activeBgLayer === 1 ? bgLayer2 : bgLayer1;
+                const currentLayer = activeBgLayer === 1 ? bgLayer1 : bgLayer2;
+
+                nextLayer.style.backgroundImage = `url('${directUrl}')`;
+                nextLayer.classList.add('active');
+                currentLayer.classList.remove('active');
+
+                activeBgLayer = activeBgLayer === 1 ? 2 : 1;
+            }
+        }
+
+        // ========== 更新 UI ==========
+        async function update(state) {
+            const attrs = state.attributes;
+            isPlaying = state.state === 'playing';
+
+            document.getElementById('statusMessage').style.display = 'none';
+            document.getElementById('mainContainer').style.display = 'flex';
+
+            // 加载封面图片（需要认证）
+            const coverUrl = attrs.entity_picture;
+            if (coverUrl && coverUrl !== window._lastCoverUrl) {
+                window._lastCoverUrl = coverUrl;
+                loadCoverImage(coverUrl);
+            }
+
+            document.getElementById('title').textContent = attrs.media_title || '未知歌曲';
+            document.getElementById('artist').textContent = attrs.media_artist || '';
+
+            const playIcon = '<svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+            const pauseIcon = '<svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+            document.getElementById('playBtn').innerHTML = isPlaying ? pauseIcon : playIcon;
+
+            if (attrs.volume_level !== undefined) {
+                document.getElementById('volumeSlider').value = Math.round(attrs.volume_level * 100);
+            }
+
+            duration = attrs.media_duration || 0;
+            document.getElementById('duration').textContent = formatTime(duration);
+
+            const songId = parseSongId(attrs.media_content_id);
+            if (songId && songId !== currentSongId) {
+                currentSongId = songId;
+                currentIndex = -1;
+                lastPosition = 0; // 重置防抖位置
+                window._lastSeekTime = 0; // 重置 seek 防抖，确保新歌位置同步
+                fetchLyrics(songId);
+            }
+
+            // 只有在最近没有手动 seek 时才用 HA 的位置信息
+            // 这避免了 seek 后 HA 的旧时间戳覆盖我们的本地预测
+            const now = Date.now();
+            if (!window._lastSeekTime || now - window._lastSeekTime > 2000) {
+                currentPosition = attrs.media_position || 0;
+                positionUpdatedAt = attrs.media_position_updated_at
+                    ? new Date(attrs.media_position_updated_at).getTime()
+                    : Date.now();
+            }
+        }
+
+        // 上一次更新的位置，用于防抖
+        let lastPosition = 0;
+
+        // 二分查找当前歌词索引（与 ncloud-lyrics-card.js 一致）
+        function findCurrentLyricIndex(lyrics, currentTime) {
+            if (!lyrics.length) return -1;
+
+            // 添加 0.3s 缓冲区，避免时间戳为 0 的歌词立即高亮
+            const effectiveTime = currentTime - 0.3;
+            if (effectiveTime < lyrics[0].time) return -1;
+            if (effectiveTime >= lyrics[lyrics.length - 1].time) return lyrics.length - 1;
+
+            let left = 0;
+            let right = lyrics.length - 1;
+
+            while (left <= right) {
+                const mid = Math.floor((left + right) / 2);
+                if (lyrics[mid].time <= effectiveTime) {
+                    if (mid + 1 >= lyrics.length || lyrics[mid + 1].time > effectiveTime) {
+                        return mid;
+                    }
+                    left = mid + 1;
+                } else {
+                    right = mid - 1;
+                }
+            }
+            return left;
+        }
+
+        function animationUpdate() {
+            if (!positionUpdatedAt) {
+                requestAnimationFrame(animationUpdate);
+                return;
+            }
+
+            // 计算当前时间
+            let currentTime = currentPosition;
+            if (isPlaying) {
+                const elapsed = (Date.now() - positionUpdatedAt) / 1000;
+                currentTime = currentPosition + elapsed;
+            }
+
+            // 更新进度条和时间显示
+            if (duration > 0) {
+                const percent = Math.min((currentTime / duration) * 100, 100);
+                document.getElementById('progressFill').style.width = `${percent}%`;
+                document.getElementById('currentTime').textContent = formatTime(currentTime);
+            }
+
+            // 歌词同步
+            if (mergedLyrics.length > 0) {
+                // 应用歌词偏移量 (正值=歌词延后/等待更久，负值=歌词提前)
+                const adjustedTime = currentTime + (lyricOffset / 1000);
+
+                // 0.05 秒防抖，避免频繁更新
+                if (Math.abs(adjustedTime - lastPosition) < 0.05) {
+                    requestAnimationFrame(animationUpdate);
+                    return;
+                }
+                lastPosition = adjustedTime;
+
+                // 使用二分查找获取当前歌词索引
+                const newIndex = findCurrentLyricIndex(mergedLyrics, adjustedTime);
+
+                // 更新高亮状态
+                const lines = document.querySelectorAll('.lyric-line');
+                if (newIndex !== currentIndex) {
+                    currentIndex = newIndex;
+                    lines.forEach((el, i) => el.classList.toggle('active', i === currentIndex));
+                }
+
+                // 滚动到目标位置（歌词未开始时显示第一句）
+                const targetIndex = currentIndex >= 0 ? currentIndex : 0;
+                if (targetIndex < lines.length) {
+                    const targetLine = lines[targetIndex];
+                    const container = document.getElementById('lyricsScroll');
+                    const containerHeight = document.querySelector('.lyrics-container').offsetHeight;
+                    const offset = targetLine.offsetTop - containerHeight / 2 + targetLine.offsetHeight / 2;
+                    container.style.transform = `translateY(-${Math.max(0, offset)}px)`;
+                }
+            }
+
+            requestAnimationFrame(animationUpdate);
+        }
+
+        // ========== 辅助函数 ==========
+        function formatTime(seconds) {
+            if (!seconds || isNaN(seconds)) return '0:00';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function showStatus(type, message) {
+            const icons = { loading: '🎵', error: '❌', info: 'ℹ️', config: '⚙️' };
+            document.getElementById('statusMessage').style.display = 'block';
+            document.getElementById('mainContainer').style.display = 'none';
+            document.querySelector('.status-message .icon').textContent = icons[type] || '🎵';
+            document.getElementById('statusText').innerHTML = message;
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // 自动隐藏 UI 控件（3秒无操作后隐藏）
+        let hideControlsTimer = null;
+        function showControls() {
+            document.body.classList.add('show-controls');
+            clearTimeout(hideControlsTimer);
+            hideControlsTimer = setTimeout(() => {
+                document.body.classList.remove('show-controls');
+            }, 3000);
+        }
+        document.addEventListener('mousemove', showControls);
+        document.addEventListener('click', showControls);
+        // 移动端视图切换
+        function toggleMobileView() {
+            document.body.classList.toggle('mobile-lyrics-view');
+            const btn = document.getElementById('lyricsToggleBtn');
+            const isLyricsView = document.body.classList.contains('mobile-lyrics-view');
+            btn.textContent = isLyricsView ? '🎹' : '🎵';
+            btn.title = isLyricsView ? '切换播放器' : '切换歌词';
+        }
+
+        // 初始显示一次
+        showControls();
+
+        // 进度条点击跳转
+        document.getElementById('progressBar').addEventListener('click', (e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const seekPosition = duration * percent;
+            seekTo(seekPosition);
+            // 立即更新 UI 反馈
+            currentPosition = seekPosition;
+            positionUpdatedAt = Date.now();
+            window._lastSeekTime = Date.now(); // 防止 HA 的旧数据覆盖
+        });
+
+        // ========== 启动 ==========
+        async function init() {
+            // 检查是否有配置
+            if (!config || !config.entity || !config.token) {
+                showStatus('config', '首次使用请配置播放器');
+                showConfig();
+                return;
+            }
+
+            showStatus('loading', '正在连接...');
+
+            const state = await fetchState();
+            if (state) {
+                update(state);
+
+                // 更新顶部显示的播放器名称
+                const playerName = state.attributes?.friendly_name || ENTITY_ID.replace('media_player.', '');
+                document.getElementById('currentPlayerName').textContent = playerName;
+
+                // 启动定时刷新
+                refreshInterval = setInterval(async () => {
+                    const s = await fetchState();
+                    if (s) update(s);
+                }, 1000);
+                // 启动动画帧
+                requestAnimationFrame(animationUpdate);
+            }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
