@@ -117,6 +117,28 @@
             object-fit: cover;
             border-radius: 16px;
             background: rgba(255, 255, 255, 0.05);
+            transition: opacity 0.3s;
+        }
+
+        /* 封面空状态 */
+        .cover-wrapper.empty .cover {
+            opacity: 0;
+        }
+
+        .cover-wrapper.empty::after {
+            content: '🎵';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.1));
+            border-radius: 16px;
+            color: rgba(255, 255, 255, 0.2);
         }
 
         /* 歌曲信息 */
@@ -283,7 +305,7 @@
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
             margin-top: -4px;
-            /* 垂直居中修正 (如果需要) */
+            /* 垂直居中修正 */
         }
 
         /* 针对 Firefox 的修正 */
@@ -1897,10 +1919,20 @@
             document.getElementById('mainContainer').style.display = 'flex';
 
             // 加载封面图片（需要认证）
+            // 加载封面图片（需要认证）
             const coverUrl = attrs.entity_picture;
-            if (coverUrl && coverUrl !== window._lastCoverUrl) {
-                window._lastCoverUrl = coverUrl;
-                loadCoverImage(coverUrl);
+            const coverWrapper = document.querySelector('.cover-wrapper');
+
+            if (coverUrl) {
+                coverWrapper.classList.remove('empty');
+                if (coverUrl !== window._lastCoverUrl) {
+                    window._lastCoverUrl = coverUrl;
+                    loadCoverImage(coverUrl);
+                }
+            } else {
+                coverWrapper.classList.add('empty');
+                document.getElementById('cover').src = ''; // 清空图片
+                window._lastCoverUrl = null;
             }
 
             document.getElementById('title').textContent = attrs.media_title || '未知歌曲';
