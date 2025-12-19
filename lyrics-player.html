@@ -145,6 +145,8 @@
         .song-info {
             text-align: center;
             width: 100%;
+            max-width: 460px;
+            /* 限制最大宽度，与封面同宽 */
             margin-bottom: 40px;
         }
 
@@ -304,7 +306,7 @@
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-            margin-top: -4px;
+            margin-top: -1.0px;
             /* 垂直居中修正 */
         }
 
@@ -478,14 +480,17 @@
             height: 44px;
             border: none;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 20px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
             opacity: 0;
             transition: all 0.3s;
             z-index: 100;
-            backdrop-filter: blur(10px);
         }
 
         .settings-btn:hover {
@@ -535,26 +540,33 @@
         }
 
         /* 全屏按钮 */
+        /* 全屏按钮 (方形半透明风格) */
         .fullscreen-btn {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
+            top: 24px;
+            right: 24px;
+            width: 44px;
+            height: 44px;
             border: none;
-            border-radius: 8px;
-            background: var(--control-bg);
-            color: white;
-            font-size: 18px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            /* font-size: 20px;Removed for SVG */
             cursor: pointer;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
             z-index: 100;
-            /* 确保在顶部工具栏之上 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
         }
 
         .fullscreen-btn:hover {
-            background: var(--control-hover);
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            transform: scale(1.05);
+            backdrop-filter: blur(10px);
         }
 
         /* 顶部工具栏 */
@@ -640,15 +652,21 @@
         }
 
         .player-switcher {
-            background: rgba(30, 30, 50, 0.95);
-            border-radius: 16px;
-            padding: 24px;
-            min-width: 320px;
-            max-width: 400px;
+            /* 悬浮水晶质感 + 边缘光晕 */
+            background: rgba(20, 20, 20, 0.25);
+            border-radius: 28px;
+            padding: 32px;
+            min-width: 340px;
+            max-width: 420px;
             max-height: 60vh;
             overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(20px);
+            /* 关键：增加一层微弱的白色外发光，模拟荧光感 */
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.05),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+                0 20px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(40px) saturate(120%);
+            -webkit-backdrop-filter: blur(40px) saturate(120%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .player-switcher h3 {
@@ -712,6 +730,68 @@
             margin-left: 8px;
             color: #4ade80;
             font-size: 16px;
+        }
+
+        /* 播放器切换器 - 底层播放器选项 */
+        .switcher-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 16px 0;
+        }
+
+        .base-player-switcher-option {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+
+        .base-player-switcher-option .option-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .base-player-switcher-option .option-toggle input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #4ade80;
+        }
+
+        .base-player-switcher-option .option-toggle label {
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .base-player-switcher-option .option-hint {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin: 6px 0 0 0;
+            line-height: 1.4;
+        }
+
+        .switcher-base-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 12px;
+            margin-top: 10px;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+
+        .switcher-base-select option {
+            background: #1a1a2e;
+            color: #fff;
         }
 
         .loading-text {
@@ -886,21 +966,22 @@
             display: none;
         }
 
-        /* ========== 配置对话框样式 ========== */
+        /* ========== 配置对话框样式  ========== */
         .config-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.3s;
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
         .config-overlay.show {
@@ -909,90 +990,41 @@
         }
 
         .config-dialog {
-            background: #1a1a2e;
-            border-radius: 16px;
-            padding: 32px;
+            /* 悬浮水晶质感和边缘光晕 */
+            background: rgba(20, 20, 20, 0.25);
+            border-radius: 28px;
+            padding: 40px;
             width: 90%;
-            max-width: 420px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-
-        .config-dialog h2 {
-            margin-bottom: 8px;
-            font-size: 24px;
-        }
-
-        .config-desc {
-            color: var(--text-secondary);
-            margin-bottom: 24px;
-            font-size: 14px;
-        }
-
-        .config-form label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        .config-form input[type="text"],
-        .config-form input[type="password"] {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
+            max-width: 460px;
+            /* 增加一层微弱的白色外发光，模拟荧光感 */
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.05),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+                0 20px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(40px) saturate(120%);
+            -webkit-backdrop-filter: blur(40px) saturate(120%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transform: scale(0.95);
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
             color: #fff;
-            font-size: 14px;
-            margin-bottom: 16px;
-            outline: none;
-            transition: border-color 0.2s;
         }
 
-        .config-form input:focus {
-            border-color: var(--bg-gradient-start);
+        .config-overlay.show .config-dialog {
+            transform: scale(1);
         }
 
-        .config-form input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .help-link {
-            color: var(--bg-gradient-start);
-            text-decoration: none;
-            font-size: 12px;
-            margin-left: 8px;
-        }
-
-        .help-link:hover {
-            text-decoration: underline;
-        }
-
-        .token-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: -10px;
-            margin-bottom: 16px;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .token-toggle input[type="checkbox"] {
-            width: 14px;
-            height: 14px;
-        }
-
-        /* 配置头部和关闭按钮 */
         .config-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 32px;
         }
 
         .config-header h2 {
             margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
         }
 
         .config-close-btn {
@@ -1001,7 +1033,7 @@
             border: none;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.8);
             font-size: 16px;
             cursor: pointer;
             transition: all 0.2s;
@@ -1011,65 +1043,179 @@
         }
 
         .config-close-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.25);
             color: #fff;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
         }
 
-        .config-close-btn.hidden {
-            display: none;
+        .config-desc {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 32px;
+            font-size: 14px;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .config-form label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: 0.5px;
+        }
+
+        .config-form input[type="text"],
+        .config-form input[type="password"] {
+            width: 100%;
+            padding: 14px 18px;
+            /* 更淡的背景，极细边框 */
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            color: #fff;
+            font-size: 15px;
+            margin-bottom: 24px;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .config-form input:focus {
+            /* 聚焦辉光 */
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .config-form input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .help-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 12px;
+            margin-left: 8px;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.3);
+            transition: all 0.2s;
+        }
+
+        .help-link:hover {
+            color: #fff;
+            border-bottom-color: #fff;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
+
+        .token-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: -12px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+        }
+
+        .token-toggle input[type="checkbox"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 5px;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .token-toggle input[type="checkbox"]:checked {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+        }
+
+        .token-toggle input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000;
+            font-size: 12px;
+            font-weight: bold;
         }
 
         .config-actions {
             display: flex;
-            gap: 12px;
-            margin-top: 24px;
+            gap: 16px;
+            margin-top: 40px;
         }
 
         .config-btn {
             flex: 1;
-            padding: 12px 20px;
+            padding: 14px 20px;
             border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            letter-spacing: 0.3px;
         }
 
+        /* 温婉如玉风格 */
         .config-btn.primary {
-            background: var(--bg-gradient-start);
-            color: #fff;
+            /* 半透明渐变背景，模拟玉石/磨砂玻璃 */
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+            color: #333;
+            /* 去除刺眼外发光，改用柔和阴影 + 内发光增加质感 */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2),
+                inset 0 0 20px rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
         }
 
         .config-btn.primary:hover {
-            background: #25d366;
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8));
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25),
+                inset 0 0 20px rgba(255, 255, 255, 0.8);
         }
 
         .config-btn.secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .config-btn.secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
         }
 
         .token-help {
-            margin-top: 20px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
+            margin-top: 24px;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .token-help h3 {
-            font-size: 16px;
-            margin-bottom: 12px;
+            font-size: 15px;
+            margin-bottom: 16px;
+            color: #fff;
         }
 
         .token-help ol {
             padding-left: 20px;
-            font-size: 13px;
-            color: var(--text-secondary);
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
             line-height: 1.8;
         }
 
@@ -1078,51 +1224,65 @@
         }
 
         .token-help .config-btn {
-            margin-top: 16px;
+            margin-top: 20px;
             width: 100%;
         }
 
         /* 设置按钮 */
+        /* 设置按钮 (方形半透明风格) */
         .settings-btn {
             position: fixed;
-            top: 20px;
-            right: 70px;
-            width: 40px;
-            height: 40px;
+            top: 24px;
+            right: 80px;
+            width: 44px;
+            height: 44px;
             border: none;
-            border-radius: 8px;
-            background: var(--control-bg);
-            color: white;
-            font-size: 18px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 100;
+            backdrop-filter: blur(5px);
         }
 
         .settings-btn:hover {
-            background: var(--control-hover);
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            transform: scale(1.05);
+            backdrop-filter: blur(10px);
         }
 
-        /* 安全提示 */
+        /* 安全提示 (流光风格) */
         .security-notice {
-            background: rgba(255, 193, 7, 0.1);
-            border: 1px solid rgba(255, 193, 7, 0.3);
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 16px;
+            background: linear-gradient(90deg, rgba(255, 193, 7, 0.05) 0%, transparent 100%);
+            border: none;
+            border-left: 3px solid #ffc107;
+            border-radius: 4px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
             font-size: 13px;
         }
 
         .security-notice strong {
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             margin-bottom: 8px;
             color: #ffc107;
+            font-size: 14px;
+            text-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
         }
 
         .security-notice ul {
             margin: 0;
             padding-left: 20px;
-            color: var(--text-secondary);
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
         }
 
         .security-notice li {
@@ -1132,35 +1292,112 @@
         /* 下拉选择框 */
         .config-select {
             width: 100%;
-            padding: 12px 16px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
+            padding: 14px 18px;
+            /* 防止太过空洞 */
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
             color: #fff;
-            font-size: 14px;
-            margin-bottom: 8px;
+            font-size: 15px;
+            margin-bottom: 12px;
             outline: none;
             cursor: pointer;
             appearance: none;
             -webkit-appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255,255,255,0.7)' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 16px center;
+            background-position: right 18px center;
+            transition: all 0.3s;
         }
 
         .config-select:focus {
-            border-color: var(--bg-gradient-start);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
         }
 
         .config-select option {
-            background: #1a1a2e;
+            background: #222;
             color: #fff;
         }
 
         .entity-hint {
             font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 16px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 24px;
+            padding-left: 4px;
+        }
+
+        /* 底层播放器进度模式选项 */
+        .base-player-option {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .base-player-option:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: scale(1.01);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .option-toggle input[type="checkbox"] {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 6px;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            margin: 0;
+        }
+
+        .option-toggle input[type="checkbox"]:checked {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+        }
+
+        .option-toggle input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #000;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .option-toggle label {
+            font-size: 15px;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .option-hint {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            margin: 8px 0 0 32px;
+            line-height: 1.5;
+        }
+
+        .base-player-option .config-select {
+            margin-top: 16px;
         }
 
         /* 加载动画 */
@@ -1285,6 +1522,19 @@
             <div class="player-list" id="playerList">
                 <div class="loading-text">加载中...</div>
             </div>
+
+            <!-- 底层播放器进度模式 -->
+            <div class="switcher-divider"></div>
+            <div class="base-player-switcher-option">
+                <div class="option-toggle">
+                    <input type="checkbox" id="switcherEnableBasePlayer" onchange="toggleSwitcherBasePlayer()">
+                    <label for="switcherEnableBasePlayer">底层播放器进度模式</label>
+                </div>
+                <p class="option-hint">使用底层 DLNA 播放器的进度同步歌词，解决网络缓冲导致的歌词偏移</p>
+                <select id="switcherBaseEntity" class="switcher-base-select" style="display:none;">
+                    <option value="">-- 选择底层播放器 --</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -1360,6 +1610,18 @@
                     </select>
                     <p class="entity-hint" id="entityHint"></p>
 
+                    <!-- 底层播放器进度模式 -->
+                    <div class="base-player-option">
+                        <div class="option-toggle">
+                            <input type="checkbox" id="enableBasePlayer" onchange="toggleBasePlayerSelect()">
+                            <label for="enableBasePlayer">底层播放器进度模式</label>
+                        </div>
+                        <p class="option-hint">使用底层 DLNA 播放器的进度同步歌词，解决网络延迟导致的歌词偏移</p>
+                        <select id="configBaseEntity" class="config-select" style="display:none;">
+                            <option value="">-- 选择底层播放器 --</option>
+                        </select>
+                    </div>
+
                     <div class="config-actions">
                         <button class="config-btn secondary" onclick="goToStep1()">返回上一步</button>
                         <button class="config-btn primary" onclick="saveConfig()">保存并连接</button>
@@ -1378,10 +1640,22 @@
     </div>
 
     <!-- 设置按钮 -->
-    <button class="settings-btn" onclick="showConfig()" title="设置">⚙️</button>
+    <button class="settings-btn" onclick="showConfig()" title="设置">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+            <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+        </svg>
+    </button>
 
     <!-- 全屏按钮 -->
-    <button class="fullscreen-btn" onclick="toggleFullscreen()" title="全屏">⛶</button>
+    <button class="fullscreen-btn" onclick="toggleFullscreen()" title="全屏">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+        </svg>
+    </button>
 
     <!-- 歌词切换按钮（移动端） -->
     <button class="lyrics-toggle-btn" id="lyricsToggleBtn" onclick="toggleMobileView()" title="切换歌词">🎵</button>
@@ -1530,9 +1804,11 @@
                     return;
                 }
 
-                // 填充下拉列表
+                // 填充主播放器下拉列表
                 const select = document.getElementById('configEntity');
+                const baseSelect = document.getElementById('configBaseEntity');
                 select.innerHTML = '<option value="">-- 请选择 --</option>';
+                baseSelect.innerHTML = '<option value="">-- 选择底层播放器 --</option>';
 
                 mediaPlayers.forEach(player => {
                     const option = document.createElement('option');
@@ -1540,12 +1816,20 @@
                     const friendlyName = player.attributes.friendly_name || player.entity_id;
                     option.textContent = `${friendlyName} (${player.entity_id})`;
                     select.appendChild(option);
+                    // 同时填充底层播放器列表
+                    baseSelect.appendChild(option.cloneNode(true));
                 });
 
                 // 如果之前有保存的实体，自动选中
                 const savedConfig = getConfig();
                 if (savedConfig?.entity) {
                     select.value = savedConfig.entity;
+                }
+                // 恢复底层播放器设置
+                if (savedConfig?.base_entity) {
+                    document.getElementById('enableBasePlayer').checked = true;
+                    baseSelect.style.display = 'block';
+                    baseSelect.value = savedConfig.base_entity;
                 }
 
                 document.getElementById('entityHint').textContent = `共找到 ${mediaPlayers.length} 个播放器`;
@@ -1575,7 +1859,16 @@
                 return;
             }
 
-            const config = { entity, token, ha_url };
+            // 底层播放器设置
+            const enableBase = document.getElementById('enableBasePlayer').checked;
+            const base_entity = enableBase ? document.getElementById('configBaseEntity').value : null;
+
+            if (enableBase && !base_entity) {
+                alert('请选择底层播放器');
+                return;
+            }
+
+            const config = { entity, token, ha_url, base_entity };
             if (saveConfigToStorage(config)) {
                 hideConfig();
                 window.location.reload();
@@ -1608,6 +1901,16 @@
             tokenInput.type = checkbox.checked ? 'text' : 'password';
         }
 
+        // 底层播放器选项开关
+        function toggleBasePlayerSelect() {
+            const checkbox = document.getElementById('enableBasePlayer');
+            const baseSelect = document.getElementById('configBaseEntity');
+            baseSelect.style.display = checkbox.checked ? 'block' : 'none';
+            if (!checkbox.checked) {
+                baseSelect.value = '';
+            }
+        }
+
         // ========== 播放器切换功能 ==========
         let cachedMediaPlayers = [];
 
@@ -1618,6 +1921,26 @@
 
         function hidePlayerSwitcher() {
             document.getElementById('playerSwitcherOverlay').classList.remove('show');
+        }
+
+        // 根据云音乐代理播放器推断底层播放器
+        // 例如：media_player.yun_yin_le_edifier_ma3_9c7c -> media_player.edifier_ma3_9c7c
+        function inferBasePlayer(proxyEntityId, players) {
+            if (!proxyEntityId) return null;
+
+            // 检查是否是云音乐代理播放器 (包含 yun_yin_le_ 前缀)
+            const prefix = 'media_player.yun_yin_le_';
+            if (!proxyEntityId.startsWith(prefix)) {
+                return null; // 不是云音乐代理播放器
+            }
+
+            // 提取设备名部分
+            const deviceName = proxyEntityId.substring(prefix.length);
+            const inferredBaseId = `media_player.${deviceName}`;
+
+            // 检查推断的底层播放器是否存在
+            const exists = players.some(p => p.entity_id === inferredBaseId);
+            return exists ? inferredBaseId : null;
         }
 
         async function loadPlayerList() {
@@ -1655,6 +1978,31 @@
                     `;
                 }).join('');
 
+                // 填充底层播放器选择器
+                const baseSelect = document.getElementById('switcherBaseEntity');
+                baseSelect.innerHTML = '<option value="">-- 选择底层播放器 --</option>';
+                cachedMediaPlayers.forEach(player => {
+                    const option = document.createElement('option');
+                    option.value = player.entity_id;
+                    option.textContent = player.attributes.friendly_name || player.entity_id;
+                    baseSelect.appendChild(option);
+                });
+
+                // 恢复当前的底层播放器设置，或自动推断
+                const currentConfig = getConfig();
+                if (currentConfig?.base_entity) {
+                    // 已有配置，使用配置值
+                    document.getElementById('switcherEnableBasePlayer').checked = true;
+                    baseSelect.style.display = 'block';
+                    baseSelect.value = currentConfig.base_entity;
+                } else {
+                    // 尝试自动推断底层播放器
+                    const inferredBase = inferBasePlayer(ENTITY_ID, cachedMediaPlayers);
+                    if (inferredBase) {
+                        baseSelect.value = inferredBase;
+                    }
+                }
+
             } catch (e) {
                 listEl.innerHTML = '<div class="loading-text">加载失败</div>';
             }
@@ -1667,6 +2015,40 @@
                 saveConfigToStorage(config);
                 hidePlayerSwitcher();
                 window.location.reload();
+            }
+        }
+
+        // 切换器中的底层播放器开关
+        function toggleSwitcherBasePlayer() {
+            const checkbox = document.getElementById('switcherEnableBasePlayer');
+            const baseSelect = document.getElementById('switcherBaseEntity');
+            baseSelect.style.display = checkbox.checked ? 'block' : 'none';
+
+            if (checkbox.checked) {
+                // 监听选择变化
+                baseSelect.onchange = saveSwitcherBasePlayer;
+            } else {
+                // 取消底层播放器设置
+                saveSwitcherBasePlayer();
+            }
+        }
+
+        // 保存底层播放器设置
+        function saveSwitcherBasePlayer() {
+            const checkbox = document.getElementById('switcherEnableBasePlayer');
+            const baseSelect = document.getElementById('switcherBaseEntity');
+            const config = getConfig();
+
+            if (config) {
+                if (checkbox.checked && baseSelect.value) {
+                    config.base_entity = baseSelect.value;
+                    BASE_ENTITY_ID = baseSelect.value;
+                } else {
+                    config.base_entity = null;
+                    BASE_ENTITY_ID = null;
+                    window._basePlayerState = null;
+                }
+                saveConfigToStorage(config);
             }
         }
 
@@ -1685,6 +2067,7 @@
         let ENTITY_ID = config?.entity || '';
         let TOKEN = config?.token || '';
         let HA_URL = config?.ha_url || window.location.origin;
+        let BASE_ENTITY_ID = config?.base_entity || null; // 底层播放器实体 ID
 
         // ========== 状态变量 ==========
         let lyrics = [];
@@ -1769,15 +2152,37 @@
         }
 
         // ========== 解析 song_id ==========
+        // 支持多种播放器格式:
+        // 1. MA/Jellyfin: jellyfin--xxx://track/s_1909254080
+        // 2. 原生 NetEase: neteasecloud://track?data=xxx
         function parseSongId(contentId) {
+            if (!contentId) return '';
+
+            // 1. MA/Jellyfin 格式: jellyfin--xxx://track/s_1909254080
+            if (contentId.includes('jellyfin') || contentId.includes('://track/')) {
+                const match = contentId.match(/\/track\/([^/?#]+)/);
+                if (match) {
+                    // 移除可能的 s_ 前缀 (Subsonic/Jellyfin 标识)
+                    const songId = match[1].replace(/^s_/, '');
+                    console.log('解析 MA/Jellyfin 格式歌曲 ID:', songId, '原始:', contentId);
+                    return songId;
+                }
+            }
+
+            // 2. 原生 NetEase 格式: neteasecloud://track?data=xxx
             try {
                 const url = new URL(contentId);
                 const data = url.searchParams.get('data');
                 if (data) {
                     const decoded = atob(data);
-                    return new URLSearchParams(decoded).get('id') || '';
+                    const songId = new URLSearchParams(decoded).get('id') || '';
+                    console.log('解析 NetEase 原生格式歌曲 ID:', songId);
+                    return songId;
                 }
             } catch { }
+
+            // 3. 兜底处理
+            console.warn('无法解析 media_content_id 格式:', contentId);
             return '';
         }
 
@@ -1798,15 +2203,33 @@
         }
 
         async function fetchLyrics(songId) {
+            if (!songId) {
+                console.warn('歌曲 ID 为空,无法获取歌词');
+                mergedLyrics = [];
+                renderLyrics();
+                return;
+            }
+
             try {
+                console.log('正在获取歌词,歌曲 ID:', songId);
                 const res = await fetch(`${HA_URL}/cloud_music/api?action=lyric&id=${songId}`, getFetchOptions());
                 const data = await res.json();
-                lyrics = parseLrc(data.lrc);
-                tlyrics = parseLrc(data.tlyric);
-                mergedLyrics = mergeLyrics(lyrics, tlyrics);
+
+                if (data.lrc) {
+                    lyrics = parseLrc(data.lrc);
+                    tlyrics = parseLrc(data.tlyric);
+                    mergedLyrics = mergeLyrics(lyrics, tlyrics);
+                    console.log('歌词加载成功,行数:', mergedLyrics.length);
+                } else {
+                    console.warn('API 返回数据中没有歌词:', data);
+                    mergedLyrics = [];
+                }
+
                 renderLyrics();
             } catch (e) {
                 console.error('获取歌词失败:', e);
+                mergedLyrics = [];
+                renderLyrics();
             }
         }
 
@@ -1962,10 +2385,19 @@
             // 这避免了 seek 后 HA 的旧时间戳覆盖我们的本地预测
             const now = Date.now();
             if (!window._lastSeekTime || now - window._lastSeekTime > 2000) {
-                currentPosition = attrs.media_position || 0;
-                positionUpdatedAt = attrs.media_position_updated_at
-                    ? new Date(attrs.media_position_updated_at).getTime()
-                    : Date.now();
+                // 如果配置了底层播放器，使用底层播放器的进度
+                if (BASE_ENTITY_ID && window._basePlayerState) {
+                    const baseAttrs = window._basePlayerState.attributes;
+                    currentPosition = baseAttrs.media_position || 0;
+                    positionUpdatedAt = baseAttrs.media_position_updated_at
+                        ? new Date(baseAttrs.media_position_updated_at).getTime()
+                        : Date.now();
+                } else {
+                    currentPosition = attrs.media_position || 0;
+                    positionUpdatedAt = attrs.media_position_updated_at
+                        ? new Date(attrs.media_position_updated_at).getTime()
+                        : Date.now();
+                }
             }
         }
 
@@ -2126,6 +2558,10 @@
 
             const state = await fetchState();
             if (state) {
+                // 如果配置了底层播放器，先获取其状态
+                if (BASE_ENTITY_ID) {
+                    await fetchBasePlayerState();
+                }
                 update(state);
 
                 // 更新顶部显示的播放器名称
@@ -2134,12 +2570,31 @@
 
                 // 启动定时刷新
                 refreshInterval = setInterval(async () => {
+                    // 如果配置了底层播放器，同时获取其状态
+                    if (BASE_ENTITY_ID) {
+                        await fetchBasePlayerState();
+                    }
                     const s = await fetchState();
                     if (s) update(s);
                 }, 1000);
                 // 启动动画帧
                 requestAnimationFrame(animationUpdate);
             }
+        }
+
+        // 获取底层播放器状态
+        async function fetchBasePlayerState() {
+            if (!BASE_ENTITY_ID) return null;
+            try {
+                const res = await fetch(`${HA_URL}/api/states/${BASE_ENTITY_ID}`, getFetchOptions());
+                if (res.ok) {
+                    window._basePlayerState = await res.json();
+                    return window._basePlayerState;
+                }
+            } catch (e) {
+                console.error('获取底层播放器状态失败:', e);
+            }
+            return null;
         }
 
         init();
